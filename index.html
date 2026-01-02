@@ -8,7 +8,6 @@
 <meta name="theme-color" content="#ff5fb3">
 <link rel="icon" href="favicon.ico" type="image/x-icon">
 
-
 <style>
 * { box-sizing: border-box; }
 
@@ -108,7 +107,7 @@ button {
 
 /* Histórico */
 .history {
-    position: absolute;
+    position: fixed; /* alterado para garantir visibilidade */
     inset: 0;
     background: linear-gradient(180deg, #ffb6e6, #c77dff);
     border-radius: 30px;
@@ -116,6 +115,7 @@ button {
     display: none;
     flex-direction: column;
     color: #fff;
+    z-index: 999;
 }
 
 .history ul {
@@ -180,6 +180,26 @@ button {
     }
     .history { border-radius: 0; }
 }
+
+/* Botões de serviço */
+.service-btn {
+    background: linear-gradient(135deg, #ffe6f0, #ffb6e6);
+    border: none;
+    border-radius: 15px;
+    padding: 5px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-weight: bold;
+    font-size: 14px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    transition: transform 0.2s;
+}
+
+.service-btn:hover {
+    transform: scale(1.1);
+}
 </style>
 </head>
 
@@ -187,36 +207,49 @@ button {
 
 <div class="machine">
 
-<div class="screen">
-    <div class="brand">💖 <span>BELLY</span> 💇‍♀️💉<br>Tattoo & Cabeleleira</div>
-    <div id="message">✨ Digite o valor ✨</div>
-    <div class="value" id="value">R$ 0,00</div>
-</div>
+    <div class="screen">
+        <div class="brand">💖 <span>BELLY</span> 💇‍♀️💉<br>Tattoo & Cabeleleira</div>
+        <div id="message">✨ Digite o valor ✨</div>
+        <div class="value" id="value">R$ 0,00</div>
+    </div>
 
-<div class="keyboard">
-    <button class="num" onclick="addNumber(1)">1</button>
-    <button class="num" onclick="addNumber(2)">2</button>
-    <button class="num" onclick="addNumber(3)">3</button>
-    <button class="num" onclick="addNumber(4)">4</button>
-    <button class="num" onclick="addNumber(5)">5</button>
-    <button class="num" onclick="addNumber(6)">6</button>
-    <button class="num" onclick="addNumber(7)">7</button>
-    <button class="num" onclick="addNumber(8)">8</button>
-    <button class="num" onclick="addNumber(9)">9</button>
-    <button class="clear" onclick="clearValue()">🧹</button>
-    <button class="num" onclick="addNumber(0)">0</button>
-    <button class="cancel" onclick="cancel()">❌</button>
-    <button class="ok" style="grid-column:span 3" onclick="pay()">💳 PAGAR 💖</button>
-</div>
+    <div class="keyboard">
+        <button class="num" onclick="addNumber(1)">1</button>
+        <button class="num" onclick="addNumber(2)">2</button>
+        <button class="num" onclick="addNumber(3)">3</button>
+        <button class="num" onclick="addNumber(4)">4</button>
+        <button class="num" onclick="addNumber(5)">5</button>
+        <button class="num" onclick="addNumber(6)">6</button>
+        <button class="num" onclick="addNumber(7)">7</button>
+        <button class="num" onclick="addNumber(8)">8</button>
+        <button class="num" onclick="addNumber(9)">9</button>
+        <button class="clear" onclick="clearValue()">🧹</button>
+        <button class="num" onclick="addNumber(0)">0</button>
+        <button class="cancel" onclick="cancel()">❌</button>
+        <button class="ok" style="grid-column:span 3" onclick="pay()">💳 PAGAR 💖</button>
+    </div>
 
-<button class="history-btn" onclick="openHistory()">📜 HISTÓRICO</button>
 
-<div class="history" id="history">
-    <h3 style="text-align:center;">💖 Histórico 💖</h3>
-    <ul id="historyList"></ul>
-    <div id="totalValue">💰 Total: R$ 0,00</div>
-    <button class="close-history" onclick="closeHistory()">⬅ VOLTAR</button>
-</div>
+    <button class="history-btn" onclick="openHistory()">📜 HISTÓRICO</button>
+
+    <div class="history" id="history">
+        <h3 style="text-align:center;">💖 Histórico 💖</h3>
+        <ul id="historyList"></ul>
+        <div id="totalValue">💰 Total: R$ 0,00</div>
+        <button class="close-history" onclick="closeHistory()">⬅ VOLTAR</button>
+    </div>
+
+        <div class="service-selection" style="display:flex; justify-content:space-around; margin-top:15px;">
+        <button class="service-btn" onclick="selectService('Tattoo')">
+            <img src="https://cdn-icons-png.flaticon.com/512/3565/3565457.png" alt="Tattoo" style="width:60px; height:60px;">
+            <div>Tattoo</div>
+        </button>
+
+        <button class="service-btn" onclick="selectService('Cabeleireira')">
+            <img src="https://cdn-icons-png.flaticon.com/512/2921/2921822.png" alt="Cabeleireira" style="width:60px; height:60px;">
+            <div>Cabeleireira</div>
+        </button>
+    </div>
 
 </div>
 
@@ -228,6 +261,7 @@ button {
 <script>
 let amount = "";
 let history = [];
+let selectedService = "";
 
 function addNumber(num) {
     amount += num;
@@ -252,43 +286,45 @@ function cancel() {
     updateDisplay();
 }
 
-function pay() {
-    if(!amount) return;
+function selectService(service) {
+    selectedService = service;
+    document.getElementById("message").innerText = `✨ Serviço selecionado: ${service} ✨`;
+}
 
-    let valueNumber = parseFloat(amount)/100;
-    history.push(valueNumber);
+function pay() {
+    if (!amount) return;
+    if (!selectedService) {
+        document.getElementById("message").innerText = "❌ Escolha um serviço antes de pagar!";
+        return;
+    }
+
+    let valueNumber = parseFloat(amount) / 100;
+    history.push({ service: selectedService, value: valueNumber });
     updateHistory();
 
-    document.getElementById("message").innerText="💖 Pagamento aprovado!";
+    document.getElementById("message").innerText = `💖 Pagamento aprovado! Serviço: ${selectedService}`;
     document.getElementById("successSound").play();
     heartsEffect();
 
-    amount="";
+    amount = "";
+    selectedService = "";
     updateDisplay();
 }
 
-function openHistory() {
-    document.getElementById("history").style.display="flex";
-}
-
-function closeHistory() {
-    document.getElementById("history").style.display="none";
-}
-
 function updateHistory() {
-    let list=document.getElementById("historyList");
-    let total=0;
-    list.innerHTML="";
+    let list = document.getElementById("historyList");
+    let total = 0;
+    list.innerHTML = "";
 
-    history.forEach((v,i)=>{
-        total+=v;
-        let li=document.createElement("li");
-        li.textContent=`💰 ${i+1}º pagamento: ${v.toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}`;
+    history.forEach((item, i) => {
+        total += item.value;
+        let li = document.createElement("li");
+        li.textContent = `💰 ${i + 1}º pagamento (${item.service}): ${item.value.toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}`;
         list.appendChild(li);
     });
 
-    document.getElementById("totalValue").innerText=
-        "💰 Total: "+total.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+    document.getElementById("totalValue").innerText =
+        "💰 Total: " + total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
 function heartsEffect() {
@@ -301,8 +337,15 @@ function heartsEffect() {
         setTimeout(()=>h.remove(),3000);
     }
 }
-</script>
-<script>
+
+function openHistory() {
+    document.getElementById("history").style.display = "flex";
+}
+
+function closeHistory() {
+    document.getElementById("history").style.display = "none";
+}
+
 if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("service-worker.js");
 }
