@@ -204,6 +204,16 @@ button {
 </head>
 
 <body>
+<!-- Tela de introdução -->
+<div id="intro" style="position:fixed; inset:0; background:#fff; display:flex; justify-content:center; align-items:center; z-index:9999; flex-direction:column;">
+    <video id="introVideo" width="300" autoplay muted>
+        <source src="intro.mp4" type="video/mp4">
+        Seu navegador não suporta vídeo.
+    </video>
+    <button id="skipBtn" style="margin-top:20px; padding:10px 20px; font-size:16px; border:none; border-radius:10px; background:#ff5fb3; color:#fff; cursor:pointer;">
+        Pular
+    </button>
+</div>
 
 <div class="machine">
 
@@ -349,6 +359,28 @@ function closeHistory() {
 if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("service-worker.js");
 }
+</script>
+<script>
+const intro = document.getElementById('intro');
+const video = document.getElementById('introVideo');
+const skipBtn = document.getElementById('skipBtn');
+const machine = document.querySelector('.machine');
+
+// Esconde a máquina enquanto o vídeo toca
+machine.style.display = 'none';
+
+// Quando o vídeo termina, mostra a máquina
+video.addEventListener('ended', () => {
+    intro.style.display = 'none';
+    machine.style.display = 'block';
+});
+
+// Pular vídeo
+skipBtn.addEventListener('click', () => {
+    video.pause();
+    intro.style.display = 'none';
+    machine.style.display = 'block';
+});
 </script>
 
 </body>
