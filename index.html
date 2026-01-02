@@ -238,6 +238,35 @@ button {
     cursor: pointer;
 }
 
+.score-container {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 10;
+
+    font-size: 18px;
+    font-weight: bold;
+
+    background: rgba(255,255,255,0.85);
+    padding: 6px 12px;
+    border-radius: 20px;
+    color: #ff5fb3;
+
+    box-shadow: 0 4px 8px rgba(0,0,0,0.25);
+}
+.clear-history {
+    margin-top: 10px;
+    height: 45px;
+    border-radius: 15px;
+    background: linear-gradient(135deg, #ffb347, #ff9800);
+    color: #fff;
+    font-weight: bold;
+    font-size: 16px;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
 </style>
 </head>
 
@@ -252,6 +281,9 @@ button {
 
 
 <div class="machine">
+    <div class="score-container" id="scoreDisplay">
+        ⭐ <span id="scoreValue">0</span>
+    </div>
 
     <div class="screen">
         <div class="brand">💖 <span>BELLY</span> 💇‍♀️💉<br>Tattoo & Cabeleleira</div>
@@ -282,6 +314,9 @@ button {
         <h3 style="text-align:center;">💖 Histórico 💖</h3>
         <ul id="historyList"></ul>
         <div id="totalValue">💰 Total: R$ 0,00</div>
+        <button class="clear-history" onclick="openClearPopup()">
+            🗑️ APAGAR HISTÓRICO
+        </button>
         <button class="close-history" onclick="closeHistory()">⬅ VOLTAR</button>
     </div>
 
@@ -307,7 +342,23 @@ button {
 <script>
 let amount = "";
 let history = [];
+try {
+    history = JSON.parse(localStorage.getItem("bellyHistory")) || [];
+} catch {
+    history = [];
+}
+
 let selectedService = "";
+let clientName = "";
+let score = parseInt(localStorage.getItem("bellyScore")) || 0;
+
+
+function updateScore() {
+    document.getElementById("scoreValue").innerText = score;
+    localStorage.setItem("bellyScore", score);
+}
+
+window.addEventListener("load", updateScore);
 
 function addNumber(num) {
     amount += num;
@@ -344,34 +395,130 @@ function pay() {
         return;
     }
 
+    document.getElementById("clientPopup").style.display = "flex";
+}
+function confirmClientName() {
+    const input = document.getElementById("clientNameInput");
+    clientName = input.value.trim();
+
+    if (!clientName) {
+        alert("Digite o nome do cliente 💖");
+        return;
+    }
+
     let valueNumber = parseFloat(amount) / 100;
-    history.push({ service: selectedService, value: valueNumber });
+
+    history.push({
+        client: clientName,
+        service: selectedService,
+        value: valueNumber,
+        date: new Date().toLocaleString("pt-BR")
+    });
+
     updateHistory();
 
-    document.getElementById("message").innerText = `💖 Pagamento aprovado! Serviço: ${selectedService}`;
+    score++;
+    updateScore();
+
+    document.getElementById("message").innerText =
+        `💖 Pagamento aprovado! ${clientName} • ${selectedService}`;
+
     document.getElementById("successSound").play();
     heartsEffect();
 
     amount = "";
     selectedService = "";
+    clientName = "";
+    input.value = "";
+
+    document.getElementById("clientPopup").style.display = "none";
     updateDisplay();
 }
+
+function openClearPopup() {
+    document.getElementById("clearPopup").style.display = "flex";
+}
+
+function closeClearPopup() {
+    document.getElementById("clearPopup").style.display = "none";
+}
+
+function confirmClearHistory() {
+    history = [];
+    score = 0;
+
+    localStorage.removeItem("bellyHistory");
+    localStorage.removeItem("bellyScore");
+
+    updateHistory();
+    updateScore();
+
+    closeClearPopup();
+}
+
+
 
 function updateHistory() {
     let list = document.getElementById("historyList");
     let total = 0;
     list.innerHTML = "";
 
-    history.forEach((item, i) => {
+    let sections = {
+        "Tattoo": {},
+        "Cabeleireira": {}
+    };
+
+    // Agrupar por serviço e cliente
+    history.forEach(item => {
         total += item.value;
-        let li = document.createElement("li");
-        li.textContent = `💰 ${i + 1}º pagamento (${item.service}): ${item.value.toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}`;
-        list.appendChild(li);
+
+        if (!sections[item.service]) {
+            sections[item.service] = {};
+        }
+
+        if (!sections[item.service][item.client]) {
+            sections[item.service][item.client] = 0;
+        }
+
+        sections[item.service][item.client] += item.value;
+    });
+
+    // Renderizar seções
+    Object.keys(sections).forEach(service => {
+        const clients = sections[service];
+        if (Object.keys(clients).length === 0) return;
+
+        // Título da seção
+        let title = document.createElement("li");
+        title.style.fontWeight = "bold";
+        title.style.textAlign = "center";
+        title.style.background = "rgba(255,255,255,0.25)";
+        title.style.borderRadius = "10px";
+        title.style.marginTop = "10px";
+        title.textContent = service === "Tattoo" ? "💉 TATTOO" : "💇‍♀️ CABELEIREIRA";
+        list.appendChild(title);
+
+        // Clientes da seção
+        Object.keys(clients).forEach(client => {
+            let li = document.createElement("li");
+            li.textContent = `🎀 ${client} • ${clients[client].toLocaleString("pt-BR", {
+                style: "currency",
+                currency: "BRL"
+            })}`;
+            list.appendChild(li);
+        });
     });
 
     document.getElementById("totalValue").innerText =
-        "💰 Total: " + total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+        "💰 Total: " + total.toLocaleString("pt-BR", {
+            style: "currency",
+            currency: "BRL"
+        });
+
+    localStorage.setItem("bellyHistory", JSON.stringify(history));
 }
+
+
 
 function heartsEffect() {
     for(let i=0;i<12;i++){
@@ -385,8 +532,16 @@ function heartsEffect() {
 }
 
 function openHistory() {
+    try {
+        history = JSON.parse(localStorage.getItem("bellyHistory")) || [];
+    } catch {
+        history = [];
+    }
+
+    updateHistory();
     document.getElementById("history").style.display = "flex";
 }
+
 
 function closeHistory() {
     document.getElementById("history").style.display = "none";
@@ -417,7 +572,105 @@ skipBtn.addEventListener('click', () => {
     intro.style.display = 'none';
     machine.style.display = 'block';
 });
+
+window.addEventListener("load", () => {
+    updateHistory();
+    updateScore();
+});
+
+
 </script>
+
+<div id="clientPopup" style="
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.7);
+    z-index:9999;
+    justify-content:center;
+    align-items:center;
+">
+    <div style="
+        background:linear-gradient(180deg,#ff92d0,#ff5fb3);
+        padding:20px;
+        border-radius:20px;
+        width:90%;
+        max-width:300px;
+        text-align:center;
+        color:#fff;
+    ">
+        <h3>🎮 Nome do Cliente</h3>
+        <input id="clientNameInput" placeholder="Digite o nome 💖"
+        style="
+            width:100%;
+            padding:10px;
+            border-radius:10px;
+            border:none;
+            margin:10px 0;
+            font-size:16px;
+        ">
+        <button onclick="confirmClientName()" style="
+            width:100%;
+            padding:10px;
+            border:none;
+            border-radius:10px;
+            background:#6dff8f;
+            font-size:18px;
+            font-weight:bold;
+        ">CONFIRMAR ✨</button>
+    </div>
+</div>
+<div id="clearPopup" style="
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.7);
+    z-index:9999;
+    justify-content:center;
+    align-items:center;
+">
+    <div style="
+        background:linear-gradient(180deg,#ff92d0,#ff5fb3);
+        padding:20px;
+        border-radius:20px;
+        width:90%;
+        max-width:320px;
+        text-align:center;
+        color:#fff;
+        box-shadow:0 10px 25px rgba(0,0,0,0.4);
+    ">
+        <h3>🗑️ Apagar Histórico</h3>
+        <p style="font-size:14px;">
+            Isso vai apagar todos os pagamentos<br>
+            e zerar as ⭐ estrelas.
+        </p>
+
+        <button onclick="confirmClearHistory()" style="
+            width:100%;
+            padding:10px;
+            margin-top:10px;
+            border:none;
+            border-radius:10px;
+            background:#ff4d6d;
+            color:#fff;
+            font-size:16px;
+            font-weight:bold;
+        ">SIM, APAGAR</button>
+
+        <button onclick="closeClearPopup()" style="
+            width:100%;
+            padding:10px;
+            margin-top:8px;
+            border:none;
+            border-radius:10px;
+            background:#ffe6f0;
+            color:#ff5fb3;
+            font-size:15px;
+            font-weight:bold;
+        ">CANCELAR</button>
+    </div>
+</div>
+
 
 </body>
 </html>
